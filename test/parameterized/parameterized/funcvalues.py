@@ -18,8 +18,8 @@ def isNull(self, connection):
         datetime.date(2000, 12, 31), datetime.datetime(2000, 12, 31, 23, 59, 59),
     ]
     with Given("PyODBC connection"):
+        query = "SELECT isNull(?)"
         for value in values:
-            query = "SELECT isNull(?)"
             with When(f"I run '{query}' with {repr(value)} parameter"):
                 rows = connection.query(query, [value])
                 expected = "[(0, )]"

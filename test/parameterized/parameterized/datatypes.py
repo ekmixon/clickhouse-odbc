@@ -19,7 +19,7 @@ def check_datatype(connection, datatype, values, nullable=False, quote=False, re
     """Check support for a data type.
     """
     if expected is None:
-        expected = dict()
+        expected = {}
 
     if nullable:
         datatype = f"Nullable({datatype})"
@@ -30,7 +30,7 @@ def check_datatype(connection, datatype, values, nullable=False, quote=False, re
             expected[NULL] = "[(None, )]"
 
     with Given("PyODBC connection"):
-        with Given(f"parameters", description=f"""
+        with Given("parameters", description=f"""
             values {values}
             expected data {expected}
             """, format_description=False):

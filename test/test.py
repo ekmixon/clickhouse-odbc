@@ -17,13 +17,9 @@ is_python_3 = (sys.version_info.major == 3)
 is_windows = (os.name == 'nt')
 
 def main():
-    dsn = 'ClickHouse DSN (ANSI)'
-
-    if len(sys.argv) >= 2:
-        dsn = sys.argv[1]
-
-    print("Using DSN=" + dsn)
-    connection = getConnection('DSN=' + dsn)
+    dsn = sys.argv[1] if len(sys.argv) >= 2 else 'ClickHouse DSN (ANSI)'
+    print(f"Using DSN={dsn}")
+    connection = getConnection(f'DSN={dsn}')
 
     query(connection, "select * from system.build_options")
     query(connection,
@@ -42,15 +38,18 @@ def main():
 def error_timeout_test(dsn):
     # Do test of proper timeout in case of sql syntax error
     timeout = 30
-    with getConnection('DSN={};TIMEOUT={}'.format(dsn, timeout)) as connectionWithTimeout:
+    with getConnection(f'DSN={dsn};TIMEOUT={timeout}') as connectionWithTimeout:
         start = time.time()
         try:
             query(connectionWithTimeout, "SELECT * FROM system.non_existing_table")
         except pyodbc.Error as e:
-            print("Got expected error: {}".format(e))
+            print(f"Got expected error: {e}")
     end = time.time()
     if timeout <= end - start:
-        raise ValueError("Timeout for getting error is {} sec long - such delay isn't expected!".format(timeout))
+        raise ValueError(
+            f"Timeout for getting error is {timeout} sec long - such delay isn't expected!"
+        )
+
     else:
         print("[SUCCEEDED] Got expected error within {:.3f} sec".format(end - start))
 
@@ -62,30 +61,26 @@ def getConnection(connectionString):
             connection.setdecoding(pyodbc.SQL_CHAR, encoding='utf-8', ctype=pyodbc.SQL_CHAR)
             connection.setdecoding(pyodbc.SQL_WCHAR, encoding='utf-16', ctype=pyodbc.SQL_WCHAR)
             connection.setdecoding(pyodbc.SQL_WMETADATA, encoding='utf-16', ctype=pyodbc.SQL_WCHAR)
-            connection.setencoding(encoding='utf-8', ctype=pyodbc.SQL_CHAR)
         else:  # pyodbc doesn't support UCS-2 and UCS-4 conversions at the moment (and probably won't support ever?) so we retrieve everything in narrow-char utf-8
             connection.setdecoding(pyodbc.SQL_CHAR, encoding='utf-8', ctype=pyodbc.SQL_CHAR)
             connection.setdecoding(pyodbc.SQL_WCHAR, encoding='utf-8', ctype=pyodbc.SQL_CHAR)
             connection.setdecoding(pyodbc.SQL_WMETADATA, encoding='utf-8', ctype=pyodbc.SQL_CHAR)
-            connection.setencoding(encoding='utf-8', ctype=pyodbc.SQL_CHAR)
+        connection.setencoding(encoding='utf-8', ctype=pyodbc.SQL_CHAR)
     else:
         if is_windows:
             connection.setdecoding(pyodbc.SQL_CHAR, encoding='utf-8', ctype=pyodbc.SQL_CHAR, to=unicode)
             connection.setdecoding(pyodbc.SQL_WCHAR, encoding='utf-16', ctype=pyodbc.SQL_WCHAR, to=unicode)
             connection.setdecoding(pyodbc.SQL_WMETADATA, encoding='utf-16', ctype=pyodbc.SQL_WCHAR, to=unicode)
-            connection.setencoding(str, encoding='utf-8', ctype=pyodbc.SQL_CHAR)
-            connection.setencoding(unicode, encoding='utf-8', ctype=pyodbc.SQL_CHAR)
         else:  # pyodbc doesn't support UCS-2 and UCS-4 conversions at the moment (and probably won't support ever?) so we retrieve everything in narrow-char utf-8
             connection.setdecoding(pyodbc.SQL_CHAR, encoding='utf-8', ctype=pyodbc.SQL_CHAR, to=unicode)
             connection.setdecoding(pyodbc.SQL_WCHAR, encoding='utf-8', ctype=pyodbc.SQL_CHAR, to=unicode)
             connection.setdecoding(pyodbc.SQL_WMETADATA, encoding='utf-8', ctype=pyodbc.SQL_CHAR, to=unicode)
-            connection.setencoding(str, encoding='utf-8', ctype=pyodbc.SQL_CHAR)
-            connection.setencoding(unicode, encoding='utf-8', ctype=pyodbc.SQL_CHAR)
-
+        connection.setencoding(str, encoding='utf-8', ctype=pyodbc.SQL_CHAR)
+        connection.setencoding(unicode, encoding='utf-8', ctype=pyodbc.SQL_CHAR)
     return connection
 
 def query(connection, q):
-    print("{} :".format(q))
+    print(f"{q} :")
     cursor = connection.cursor()
     cursor.execute(q)
     rows = cursor.fetchall()
